@@ -108,6 +108,10 @@ class SIFTComparison(Component):
 
             matches = matcher.knnMatch(descriptors1, descriptors2, k=2)
 
+            if len(matches) > 0:
+                m, n = matches[0]
+                print(f"[SIFT] sample ratio: m.distance={m.distance:.4f}, n.distance={n.distance:.4f}, ratio={m.distance/n.distance:.4f}")
+
             good_matches = []
             for m, n in matches:
                 if m.distance < self.ratio_threshold * n.distance:
