@@ -70,7 +70,7 @@ class SIFTComparison(Component):
 
             _, buf2 = cv2.imencode('.jpg', image2)
             image2 = cv2.imdecode(buf2, cv2.IMREAD_COLOR)
-            
+
             print(f"[SIFT] image1 type after decode: {type(image1)}")
             print(f"[SIFT] image1 dtype after decode: {image1.dtype}")
             print(f"[SIFT] image2 type after decode: {type(image2)}")
@@ -79,14 +79,20 @@ class SIFTComparison(Component):
             viz1, kp1, keypoints1, descriptors1 = self._apply_sift(image1)
             viz2, kp2, keypoints2, descriptors2 = self._apply_sift(image2)
 
+            print(f"[SIFT] keypoints1 count: {len(keypoints1)}")
+            print(f"[SIFT] keypoints2 count: {len(keypoints2)}")
+            print(f"[SIFT] descriptors1 shape: {descriptors1.shape if descriptors1 is not None else 'None'}")
+            print(f"[SIFT] descriptors2 shape: {descriptors2.shape if descriptors2 is not None else 'None'}")
+
             if descriptors1 is None or descriptors2 is None or \
                len(descriptors1) < 2 or len(descriptors2) < 2:
+                print(f"[SIFT] Early return — not enough descriptors")
                 self.images_match = False
                 self.good_matches_count = 0
                 self.keypoints1 = keypoints1
                 self.keypoints2 = keypoints2
-                self.descriptors1 = descriptors1
-                self.descriptors2 = descriptors2
+                self.descriptors1 = descriptors1.tolist() if descriptors1 is not None else None
+                self.descriptors2 = descriptors2.tolist() if descriptors2 is not None else None
                 self.visualization1 = None
                 self.visualization2 = None
                 self.visualization_matches = None
@@ -109,10 +115,14 @@ class SIFTComparison(Component):
 
             self.good_matches_count = len(good_matches)
             self.images_match = self.good_matches_count >= self.good_matches_threshold
+
+            print(f"[SIFT] good_matches_count: {self.good_matches_count}")
+            print(f"[SIFT] images_match: {self.images_match}")
+
             self.keypoints1 = keypoints1
             self.keypoints2 = keypoints2
-            self.descriptors1 = descriptors1
-            self.descriptors2 = descriptors2
+            self.descriptors1 = descriptors1.tolist() if descriptors1 is not None else None
+            self.descriptors2 = descriptors2.tolist() if descriptors2 is not None else None
 
             self.visualization1 = None
             self.visualization2 = None
