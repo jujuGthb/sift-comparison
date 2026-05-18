@@ -1,5 +1,5 @@
 from sdks.novavision.src.helper.package import PackageHelper
-from capsules.SIFTComparison.src.models.PackageModel import (
+from components.SIFTComparison.src.models.PackageModel import (
     PackageModel,
     PackageConfigs,
     ConfigExecutor,

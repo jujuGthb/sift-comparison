@@ -12,13 +12,13 @@ import numpy as np
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../'))
 
 from sdks.novavision.src.media.image import Image
-from sdks.novavision.src.base.capsule import Capsule
+from sdks.novavision.src.base.component import Component
 from sdks.novavision.src.helper.executor import Executor
-from capsules.SIFTComparison.src.utils.response import build_response_sift_comparison
-from capsules.SIFTComparison.src.models.PackageModel import PackageModel
+from components.SIFTComparison.src.utils.response import build_response_sift_comparison
+from components.SIFTComparison.src.models.PackageModel import PackageModel
 
 
-class SIFTComparison(Capsule):
+class SIFTComparison(Component):
     def __init__(self, request, bootstrap):
         super().__init__(request, bootstrap)
         self.request.model = PackageModel(**(self.request.data))
