@@ -64,11 +64,17 @@ class SIFTComparison(Component):
 
             image1 = img1.value
             image2 = img2.value
+
+            _, buf1 = cv2.imencode('.jpg', image1)
+            image1 = cv2.imdecode(buf1, cv2.IMREAD_COLOR)
+
+            _, buf2 = cv2.imencode('.jpg', image2)
+            image2 = cv2.imdecode(buf2, cv2.IMREAD_COLOR)
             
-            print(f"[SIFT] image1 type: {type(image1)}")
-            print(f"[SIFT] image2 type: {type(image2)}")
-            print(f"[SIFT] image1 shape: {image1.shape if hasattr(image1, 'shape') else 'NO SHAPE'}")
-            print(f"[SIFT] image2 shape: {image2.shape if hasattr(image2, 'shape') else 'NO SHAPE'}")
+            print(f"[SIFT] image1 type after decode: {type(image1)}")
+            print(f"[SIFT] image1 dtype after decode: {image1.dtype}")
+            print(f"[SIFT] image2 type after decode: {type(image2)}")
+            print(f"[SIFT] image2 dtype after decode: {image2.dtype}")
 
             viz1, kp1, keypoints1, descriptors1 = self._apply_sift(image1)
             viz2, kp2, keypoints2, descriptors2 = self._apply_sift(image2)
