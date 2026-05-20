@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import cv2
 import numpy as np
 
@@ -31,6 +32,10 @@ class SIFTComparison(Component):
     def _extract_keypoints_and_descriptors(self, sift_output):
         keypoints_dicts = []
         descriptors = []
+
+        if isinstance(sift_output, str):
+            sift_output = json.loads(sift_output)
+
         for detection in sift_output:
             for kp in detection.get("keyPoints", []):
                 keypoints_dicts.append({
