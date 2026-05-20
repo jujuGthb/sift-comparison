@@ -37,22 +37,22 @@ class InputImage2(Input):
         title = "Image 2"
 
 
-class InputDescriptors1(Input):
-    name: Literal["InputDescriptors1"] = "InputDescriptors1"
+class InputSIFTOutput1(Input):
+    name: Literal["InputSIFTOutput1"] = "InputSIFTOutput1"
     value: Optional[Any]
     type: Literal["object"] = "object"
 
     class Config:
-        title = "Descriptors 1"
+        title = "SIFT Output 1"
 
 
-class InputDescriptors2(Input):
-    name: Literal["InputDescriptors2"] = "InputDescriptors2"
+class InputSIFTOutput2(Input):
+    name: Literal["InputSIFTOutput2"] = "InputSIFTOutput2"
     value: Optional[Any]
     type: Literal["object"] = "object"
 
     class Config:
-        title = "Descriptors 2"
+        title = "SIFT Output 2"
 
 
 class OutputImagesMatch(Output):
@@ -267,8 +267,8 @@ class SIFTComparisonConfigs(Configs):
 class SIFTComparisonInputs(Inputs):
     InputImage1: InputImage1
     InputImage2: InputImage2
-    InputDescriptors1: InputDescriptors1
-    InputDescriptors2: InputDescriptors2
+    InputSIFTOutput1: InputSIFTOutput1
+    InputSIFTOutput2: InputSIFTOutput2
 
 
 class SIFTComparisonOutputs(Outputs):
@@ -297,10 +297,9 @@ class SIFTComparisonResponse(Response):
 
 class SIFTComparison(Config):
     """
-    Compares two images using pre-computed SIFT descriptors from an external SIFT block.
-    Accepts original images for visualization and descriptors for matching.
-    Keypoints are extracted internally from the matching results.
-    Applies Lowe's ratio test and outputs all 9 results.
+    Compares two images using SIFT descriptors extracted from an external SIFT block.
+    Accepts original images for visualization and SIFT block outputs containing keypoints and descriptors.
+    Applies Lowe's ratio test and outputs all 9 results including optional visualizations.
     """
     name: Literal["SIFTComparison"] = "SIFTComparison"
     value: Union[SIFTComparisonRequest, SIFTComparisonResponse]
@@ -314,7 +313,7 @@ class SIFTComparison(Config):
 
 class ConfigExecutor(Config):
     """
-    SIFT Comparison — compares two images using pre-computed SIFT descriptors.
+    SIFT Comparison — compares two images using SIFT descriptors from an external SIFT block.
     No API key required. Runs entirely on the local machine using OpenCV.
     """
     name: Literal["ConfigExecutor"] = "ConfigExecutor"

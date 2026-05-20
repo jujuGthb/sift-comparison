@@ -1,10 +1,3 @@
-"""
-SIFT Comparison Executor: Compares two images using pre-computed SIFT descriptors.
-SIFT feature extraction is handled by an external SIFT block.
-Original images are used internally for visualization only.
-Runs entirely locally using OpenCV — no external API required.
-"""
-
 import os
 import sys
 import base64
@@ -31,38 +24,66 @@ class SIFTComparison(Component):
         self.visualize = self.request.get_param("Visualize")
         self.image_selector_1 = self.request.get_param("InputImage1")
         self.image_selector_2 = self.request.get_param("InputImage2")
-        self.descriptors_input_1 = self.request.get_param("InputDescriptors1")
-        self.descriptors_input_2 = self.request.get_param("InputDescriptors2")
+        self.sift_output_1 = self.request.get_param("InputSIFTOutput1")
+        self.sift_output_2 = self.request.get_param("InputSIFTOutput2")
 
     @staticmethod
     def bootstrap(config: dict) -> dict:
         return {}
 
+    def _extract_keypoints_and_descriptors(self, sift_output):
+        keypoints_dicts = []
+        descriptors = []
+        for detection in sift_output:
+            for kp in detection.get("keyPoints", []):
+                keypoints_dicts.append({
+                    "pt": (kp["cx"], kp["cy"]),
+                    "size": kp["size"],
+                    "angle": kp["angle"],
+                    "response": kp["response"],
+                    "octave": kp["octave"],
+                })
+                descriptors.append(kp["descriptor"])
+        return keypoints_dicts, np.array(descriptors, dtype=np.float32)
+
+    def _keypoints_to_cv2(self, keypoints_dicts):
+        keypoints = []
+        for kp in keypoints_dicts:
+            pt = kp.get("pt", (0, 0))
+            keypoints.append(cv2.KeyPoint(
+                x=float(pt[0]),
+                y=float(pt[1]),
+                size=float(kp.get("size", 1)),
+                angle=float(kp.get("angle", -1)),
+                response=float(kp.get("response", 0)),
+                octave=int(kp.get("octave", 0)),
+                class_id=-1,
+            ))
+        return keypoints
+
     def run(self):
         try:
+            keypoints1_dicts, descriptors1 = self._extract_keypoints_and_descriptors(self.sift_output_1)
+            keypoints2_dicts, descriptors2 = self._extract_keypoints_and_descriptors(self.sift_output_2)
 
-            descriptors1 = np.array(self.descriptors_input_1, dtype=np.float32)
-            descriptors2 = np.array(self.descriptors_input_2, dtype=np.float32)
-
+            print(f"[SIFT] keypoints1 count: {len(keypoints1_dicts)}")
+            print(f"[SIFT] keypoints2 count: {len(keypoints2_dicts)}")
             print(f"[SIFT] descriptors1 shape: {descriptors1.shape}")
             print(f"[SIFT] descriptors2 shape: {descriptors2.shape}")
 
-
-            if descriptors1 is None or descriptors2 is None or \
-               len(descriptors1) < 2 or len(descriptors2) < 2:
+            if len(descriptors1) < 2 or len(descriptors2) < 2:
                 print(f"[SIFT] Early return — not enough descriptors")
                 self.images_match = False
                 self.good_matches_count = 0
-                self.keypoints1 = []
-                self.keypoints2 = []
-                self.descriptors1 = self.descriptors_input_1
-                self.descriptors2 = self.descriptors_input_2
+                self.keypoints1 = keypoints1_dicts
+                self.keypoints2 = keypoints2_dicts
+                self.descriptors1 = descriptors1.tolist()
+                self.descriptors2 = descriptors2.tolist()
                 self.visualization1 = None
                 self.visualization2 = None
                 self.visualization_matches = None
                 return build_response_sift_comparison(context=self)
 
-           
             if self.matcher == "BFMatcher":
                 matcher = cv2.BFMatcher(cv2.NORM_L2)
             else:
@@ -77,7 +98,6 @@ class SIFTComparison(Component):
                 m, n = matches[0]
                 print(f"[SIFT] sample ratio: m.distance={m.distance:.4f}, n.distance={n.distance:.4f}, ratio={m.distance/n.distance:.4f}")
 
-
             good_matches = []
             for m, n in matches:
                 if m.distance < self.ratio_threshold * n.distance:
@@ -85,15 +105,13 @@ class SIFTComparison(Component):
 
             self.good_matches_count = len(good_matches)
             self.images_match = self.good_matches_count >= self.good_matches_threshold
+            self.keypoints1 = keypoints1_dicts
+            self.keypoints2 = keypoints2_dicts
+            self.descriptors1 = descriptors1.tolist()
+            self.descriptors2 = descriptors2.tolist()
 
             print(f"[SIFT] good_matches_count: {self.good_matches_count}")
             print(f"[SIFT] images_match: {self.images_match}")
-
-
-            self.keypoints1 = [m[0].queryIdx for m in good_matches]
-            self.keypoints2 = [m[0].trainIdx for m in good_matches]
-            self.descriptors1 = self.descriptors_input_1
-            self.descriptors2 = self.descriptors_input_2
 
             self.visualization1 = None
             self.visualization2 = None
@@ -109,12 +127,11 @@ class SIFTComparison(Component):
                 _, buf2 = cv2.imencode('.jpg', img2.value)
                 image2 = cv2.imdecode(buf2, cv2.IMREAD_COLOR)
 
-                # ── Apply SIFT on images to get cv2.KeyPoint objects ──
+                kp1 = self._keypoints_to_cv2(keypoints1_dicts)
+                kp2 = self._keypoints_to_cv2(keypoints2_dicts)
+
                 gray1 = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY)
                 gray2 = cv2.cvtColor(image2, cv2.COLOR_BGR2GRAY)
-                sift = cv2.SIFT_create()
-                kp1, _ = sift.detectAndCompute(gray1, None)
-                kp2, _ = sift.detectAndCompute(gray2, None)
 
                 viz1 = cv2.drawKeypoints(gray1, kp1, None)
                 viz2 = cv2.drawKeypoints(gray2, kp2, None)
@@ -126,9 +143,7 @@ class SIFTComparison(Component):
                 self.visualization2 = base64.b64encode(buf_v2).decode('utf-8')
 
                 if self.matcher == "BFMatcher":
-                    draw_params = dict(
-                        flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS
-                    )
+                    draw_params = dict(flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
                 else:
                     draw_params = dict(
                         matchColor=(0, 255, 0),
@@ -151,8 +166,8 @@ class SIFTComparison(Component):
             self.good_matches_count = 0
             self.keypoints1 = []
             self.keypoints2 = []
-            self.descriptors1 = self.descriptors_input_1 if hasattr(self, 'descriptors_input_1') else None
-            self.descriptors2 = self.descriptors_input_2 if hasattr(self, 'descriptors_input_2') else None
+            self.descriptors1 = None
+            self.descriptors2 = None
             self.visualization1 = None
             self.visualization2 = None
             self.visualization_matches = None
