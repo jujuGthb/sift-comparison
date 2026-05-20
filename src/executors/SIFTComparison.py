@@ -21,6 +21,8 @@ class SIFTComparison(Component):
         self.matcher = self.request.get_param("Matcher")
         self.sift_output_1 = self.request.get_param("InputSIFTOutput1")
         self.sift_output_2 = self.request.get_param("InputSIFTOutput2")
+        self.visualization_input_1 = self.request.get_param("InputVisualization1")
+        self.visualization_input_2 = self.request.get_param("InputVisualization2")
 
     @staticmethod
     def bootstrap(config: dict) -> dict:
@@ -59,6 +61,9 @@ class SIFTComparison(Component):
                 self.keypoints2 = keypoints2_dicts
                 self.descriptors1 = descriptors1.tolist()
                 self.descriptors2 = descriptors2.tolist()
+                self.visualization1 = self.visualization_input_1
+                self.visualization2 = self.visualization_input_2
+                self.visualization_matches = None
                 return build_response_sift_comparison(context=self)
 
             if self.matcher == "BFMatcher":
@@ -86,6 +91,9 @@ class SIFTComparison(Component):
             self.keypoints2 = keypoints2_dicts
             self.descriptors1 = descriptors1.tolist()
             self.descriptors2 = descriptors2.tolist()
+            self.visualization1 = self.visualization_input_1
+            self.visualization2 = self.visualization_input_2
+            self.visualization_matches = None
 
             print(f"[SIFT] good_matches_count: {self.good_matches_count}")
             print(f"[SIFT] images_match: {self.images_match}")
@@ -97,6 +105,9 @@ class SIFTComparison(Component):
             self.keypoints2 = []
             self.descriptors1 = None
             self.descriptors2 = None
+            self.visualization1 = self.visualization_input_1 if hasattr(self, 'visualization_input_1') else None
+            self.visualization2 = self.visualization_input_2 if hasattr(self, 'visualization_input_2') else None
+            self.visualization_matches = None
             print(f"[SIFTComparison] Error: {str(e)}")
 
         return build_response_sift_comparison(context=self)

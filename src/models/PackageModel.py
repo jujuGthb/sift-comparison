@@ -23,6 +23,24 @@ class InputSIFTOutput2(Input):
         title = "SIFT Output 2"
 
 
+class InputVisualization1(Input):
+    name: Literal["InputVisualization1"] = "InputVisualization1"
+    value: Optional[Any]
+    type: Literal["object"] = "object"
+
+    class Config:
+        title = "Visualization 1"
+
+
+class InputVisualization2(Input):
+    name: Literal["InputVisualization2"] = "InputVisualization2"
+    value: Optional[Any]
+    type: Literal["object"] = "object"
+
+    class Config:
+        title = "Visualization 2"
+
+
 class OutputImagesMatch(Output):
     name: Literal["ImagesMatch"] = "ImagesMatch"
     value: Optional[bool]
@@ -75,6 +93,33 @@ class OutputDescriptors2(Output):
 
     class Config:
         title = "Descriptors 2"
+
+
+class OutputVisualization1(Output):
+    name: Literal["Visualization1"] = "Visualization1"
+    value: Optional[Any]
+    type: Literal["Image"] = "Image"
+
+    class Config:
+        title = "Visualization 1"
+
+
+class OutputVisualization2(Output):
+    name: Literal["Visualization2"] = "Visualization2"
+    value: Optional[Any]
+    type: Literal["Image"] = "Image"
+
+    class Config:
+        title = "Visualization 2"
+
+
+class OutputVisualizationMatches(Output):
+    name: Literal["VisualizationMatches"] = "VisualizationMatches"
+    value: Optional[Any]
+    type: Literal["Image"] = "Image"
+
+    class Config:
+        title = "Visualization Matches"
 
 
 class GoodMatchesThreshold(Config):
@@ -163,6 +208,8 @@ class SIFTComparisonConfigs(Configs):
 class SIFTComparisonInputs(Inputs):
     InputSIFTOutput1: InputSIFTOutput1
     InputSIFTOutput2: InputSIFTOutput2
+    InputVisualization1: InputVisualization1
+    InputVisualization2: InputVisualization2
 
 
 class SIFTComparisonOutputs(Outputs):
@@ -172,6 +219,9 @@ class SIFTComparisonOutputs(Outputs):
     Keypoints2: OutputKeypoints2
     Descriptors1: OutputDescriptors1
     Descriptors2: OutputDescriptors2
+    Visualization1: OutputVisualization1
+    Visualization2: OutputVisualization2
+    VisualizationMatches: OutputVisualizationMatches
 
 
 class SIFTComparisonRequest(Request):
@@ -188,9 +238,9 @@ class SIFTComparisonResponse(Response):
 
 class SIFTComparison(Config):
     """
-    Compares two images using SIFT descriptors extracted from an external SIFT block.
-    Applies Lowe's ratio test and outputs match results, keypoints and descriptors.
-    Visualization is handled externally by the Draw Keypoint block.
+    Compares two images using SIFT descriptors from an external SIFT block.
+    Accepts drawn visualizations from Draw Keypoint blocks and passes them through as output.
+    Applies Lowe's ratio test and outputs all 9 results. VisualizationMatches returns None.
     """
     name: Literal["SIFTComparison"] = "SIFTComparison"
     value: Union[SIFTComparisonRequest, SIFTComparisonResponse]
