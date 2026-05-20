@@ -5,38 +5,6 @@ from sdks.novavision.src.base.model import (
 )
 
 
-class InputImage1(Input):
-    name: Literal["InputImage1"] = "InputImage1"
-    value: Union[List[Image], Image]
-    type: str = "object"
-
-    @validator("type", pre=True, always=True)
-    def set_type_based_on_value(cls, value, values):
-        value = values.get("value")
-        if isinstance(value, list):
-            return "list"
-        return "object"
-
-    class Config:
-        title = "Image 1"
-
-
-class InputImage2(Input):
-    name: Literal["InputImage2"] = "InputImage2"
-    value: Union[List[Image], Image]
-    type: str = "object"
-
-    @validator("type", pre=True, always=True)
-    def set_type_based_on_value(cls, value, values):
-        value = values.get("value")
-        if isinstance(value, list):
-            return "list"
-        return "object"
-
-    class Config:
-        title = "Image 2"
-
-
 class InputSIFTOutput1(Input):
     name: Literal["InputSIFTOutput1"] = "InputSIFTOutput1"
     value: Optional[Any]
@@ -107,33 +75,6 @@ class OutputDescriptors2(Output):
 
     class Config:
         title = "Descriptors 2"
-
-
-class OutputVisualization1(Output):
-    name: Literal["Visualization1"] = "Visualization1"
-    value: Optional[Any]
-    type: Literal["Image"] = "Image"
-
-    class Config:
-        title = "Visualization 1"
-
-
-class OutputVisualization2(Output):
-    name: Literal["Visualization2"] = "Visualization2"
-    value: Optional[Any]
-    type: Literal["Image"] = "Image"
-
-    class Config:
-        title = "Visualization 2"
-
-
-class OutputVisualizationMatches(Output):
-    name: Literal["VisualizationMatches"] = "VisualizationMatches"
-    value: Optional[Any]
-    type: Literal["Image"] = "Image"
-
-    class Config:
-        title = "Visualization Matches"
 
 
 class GoodMatchesThreshold(Config):
@@ -213,60 +154,13 @@ class Matcher(Config):
         json_schema_extra = {"shortDescription": "FLANN or Brute Force"}
 
 
-class VisualizeTrue(Config):
-    """
-    Enable visualization — generates keypoint images and match visualization using the provided images.
-    """
-    name: Literal["True"] = "True"
-    value: Literal[True] = True
-    type: Literal["bool"] = "bool"
-    field: Literal["option"] = "option"
-
-    class Config:
-        title = "Enable"
-        json_schema_extra = {"shortDescription": "Generate visualizations"}
-
-
-class VisualizeFalse(Config):
-    """
-    Disable visualization — no keypoint or match images will be generated.
-    Faster execution when visualizations are not needed.
-    """
-    name: Literal["False"] = "False"
-    value: Literal[False] = False
-    type: Literal["bool"] = "bool"
-    field: Literal["option"] = "option"
-
-    class Config:
-        title = "Disable"
-        json_schema_extra = {"shortDescription": "No visualizations"}
-
-
-class Visualize(Config):
-    """
-    Whether to generate visualizations of keypoints and matches.
-    When enabled, outputs Visualization1, Visualization2, and VisualizationMatches.
-    """
-    name: Literal["Visualize"] = "Visualize"
-    value: Union[VisualizeFalse, VisualizeTrue]
-    type: Literal["object"] = "object"
-    field: Literal["dropdownlist"] = "dropdownlist"
-
-    class Config:
-        title = "Visualize"
-        json_schema_extra = {"shortDescription": "Show keypoints and matches"}
-
-
 class SIFTComparisonConfigs(Configs):
     GoodMatchesThreshold: GoodMatchesThreshold
     RatioThreshold: RatioThreshold
     Matcher: Matcher
-    Visualize: Visualize
 
 
 class SIFTComparisonInputs(Inputs):
-    InputImage1: InputImage1
-    InputImage2: InputImage2
     InputSIFTOutput1: InputSIFTOutput1
     InputSIFTOutput2: InputSIFTOutput2
 
@@ -278,9 +172,6 @@ class SIFTComparisonOutputs(Outputs):
     Keypoints2: OutputKeypoints2
     Descriptors1: OutputDescriptors1
     Descriptors2: OutputDescriptors2
-    Visualization1: OutputVisualization1
-    Visualization2: OutputVisualization2
-    VisualizationMatches: OutputVisualizationMatches
 
 
 class SIFTComparisonRequest(Request):
@@ -298,8 +189,8 @@ class SIFTComparisonResponse(Response):
 class SIFTComparison(Config):
     """
     Compares two images using SIFT descriptors extracted from an external SIFT block.
-    Accepts original images for visualization and SIFT block outputs containing keypoints and descriptors.
-    Applies Lowe's ratio test and outputs all 9 results including optional visualizations.
+    Applies Lowe's ratio test and outputs match results, keypoints and descriptors.
+    Visualization is handled externally by the Draw Keypoint block.
     """
     name: Literal["SIFTComparison"] = "SIFTComparison"
     value: Union[SIFTComparisonRequest, SIFTComparisonResponse]
