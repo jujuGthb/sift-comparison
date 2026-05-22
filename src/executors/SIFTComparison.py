@@ -1,11 +1,13 @@
 import os
 import sys
 import json
+import base64
 import cv2
 import numpy as np
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../'))
 
+from sdks.novavision.src.media.image import Image
 from sdks.novavision.src.base.component import Component
 from sdks.novavision.src.helper.executor import Executor
 from components.SIFTComparison.src.utils.response import build_response_sift_comparison
@@ -20,10 +22,10 @@ class SIFTComparison(Component):
         self.good_matches_threshold = self.request.get_param("GoodMatchesThreshold")
         self.ratio_threshold = self.request.get_param("RatioThreshold")
         self.matcher = self.request.get_param("Matcher")
+        self.image_selector_1 = self.request.get_param("InputImage1")
+        self.image_selector_2 = self.request.get_param("InputImage2")
         self.sift_output_1 = self.request.get_param("InputSIFTOutput1")
         self.sift_output_2 = self.request.get_param("InputSIFTOutput2")
-        self.visualization_input_1 = self.request.get_param("InputVisualization1")
-        self.visualization_input_2 = self.request.get_param("InputVisualization2")
 
     @staticmethod
     def bootstrap(config: dict) -> dict:
@@ -48,6 +50,21 @@ class SIFTComparison(Component):
                 descriptors.append(kp["descriptor"])
         return keypoints_dicts, np.array(descriptors, dtype=np.float32)
 
+    def _keypoints_to_cv2(self, keypoints_dicts):
+        keypoints = []
+        for kp in keypoints_dicts:
+            pt = kp.get("pt", (0, 0))
+            keypoints.append(cv2.KeyPoint(
+                x=float(pt[0]),
+                y=float(pt[1]),
+                size=float(kp.get("size", 1)),
+                angle=float(kp.get("angle", -1)),
+                response=float(kp.get("response", 0)),
+                octave=int(kp.get("octave", 0)),
+                class_id=-1,
+            ))
+        return keypoints
+
     def run(self):
         try:
             keypoints1_dicts, descriptors1 = self._extract_keypoints_and_descriptors(self.sift_output_1)
@@ -60,14 +77,7 @@ class SIFTComparison(Component):
 
             if len(descriptors1) < 2 or len(descriptors2) < 2:
                 print(f"[SIFT] Early return — not enough descriptors")
-                self.images_match = False
-                self.good_matches_count = 0
-                self.keypoints1 = keypoints1_dicts
-                self.keypoints2 = keypoints2_dicts
-                self.descriptors1 = descriptors1.tolist()
-                self.descriptors2 = descriptors2.tolist()
-                self.visualization1 = self.visualization_input_1
-                self.visualization2 = self.visualization_input_2
+                self.detection_result = {"imagesMatch": False, "goodMatchesCount": 0}
                 self.visualization_matches = None
                 return build_response_sift_comparison(context=self)
 
@@ -90,28 +100,52 @@ class SIFTComparison(Component):
                 if m.distance < self.ratio_threshold * n.distance:
                     good_matches.append([m])
 
-            self.good_matches_count = len(good_matches)
-            self.images_match = self.good_matches_count >= self.good_matches_threshold
-            self.keypoints1 = keypoints1_dicts
-            self.keypoints2 = keypoints2_dicts
-            self.descriptors1 = descriptors1.tolist()
-            self.descriptors2 = descriptors2.tolist()
-            self.visualization1 = self.visualization_input_1
-            self.visualization2 = self.visualization_input_2
+            good_matches_count = len(good_matches)
+            images_match = good_matches_count >= self.good_matches_threshold
+
+            self.detection_result = {
+                "imagesMatch": images_match,
+                "goodMatchesCount": good_matches_count
+            }
+
+            print(f"[SIFT] good_matches_count: {good_matches_count}")
+            print(f"[SIFT] images_match: {images_match}")
+
             self.visualization_matches = None
 
-            print(f"[SIFT] good_matches_count: {self.good_matches_count}")
-            print(f"[SIFT] images_match: {self.images_match}")
+            img1 = Image.get_frame(img=self.image_selector_1, redis_db=self.redis_db)
+            img2 = Image.get_frame(img=self.image_selector_2, redis_db=self.redis_db)
+
+            _, buf1 = cv2.imencode('.jpg', img1.value)
+            image1 = cv2.imdecode(buf1, cv2.IMREAD_COLOR)
+
+            _, buf2 = cv2.imencode('.jpg', img2.value)
+            image2 = cv2.imdecode(buf2, cv2.IMREAD_COLOR)
+
+            kp1 = self._keypoints_to_cv2(keypoints1_dicts)
+            kp2 = self._keypoints_to_cv2(keypoints2_dicts)
+
+            if self.matcher == "BFMatcher":
+                draw_params = dict(flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+            else:
+                draw_params = dict(
+                    matchColor=(0, 255, 0),
+                    singlePointColor=(0, 0, 255),
+                    flags=cv2.DrawMatchesFlags_DEFAULT,
+                )
+
+            viz_matches = cv2.drawMatchesKnn(
+                image1, kp1,
+                image2, kp2,
+                good_matches,
+                None,
+                **draw_params,
+            )
+            _, buf_m = cv2.imencode('.jpg', viz_matches)
+            self.visualization_matches = base64.b64encode(buf_m).decode('utf-8')
 
         except Exception as e:
-            self.images_match = False
-            self.good_matches_count = 0
-            self.keypoints1 = []
-            self.keypoints2 = []
-            self.descriptors1 = None
-            self.descriptors2 = None
-            self.visualization1 = self.visualization_input_1 if hasattr(self, 'visualization_input_1') else None
-            self.visualization2 = self.visualization_input_2 if hasattr(self, 'visualization_input_2') else None
+            self.detection_result = {"imagesMatch": False, "goodMatchesCount": 0}
             self.visualization_matches = None
             print(f"[SIFTComparison] Error: {str(e)}")
 

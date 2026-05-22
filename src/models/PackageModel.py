@@ -5,6 +5,38 @@ from sdks.novavision.src.base.model import (
 )
 
 
+class InputImage1(Input):
+    name: Literal["InputImage1"] = "InputImage1"
+    value: Union[List[Image], Image]
+    type: str = "object"
+
+    @validator("type", pre=True, always=True)
+    def set_type_based_on_value(cls, value, values):
+        value = values.get("value")
+        if isinstance(value, list):
+            return "list"
+        return "object"
+
+    class Config:
+        title = "Image 1"
+
+
+class InputImage2(Input):
+    name: Literal["InputImage2"] = "InputImage2"
+    value: Union[List[Image], Image]
+    type: str = "object"
+
+    @validator("type", pre=True, always=True)
+    def set_type_based_on_value(cls, value, values):
+        value = values.get("value")
+        if isinstance(value, list):
+            return "list"
+        return "object"
+
+    class Config:
+        title = "Image 2"
+
+
 class InputSIFTOutput1(Input):
     name: Literal["InputSIFTOutput1"] = "InputSIFTOutput1"
     value: Optional[Any]
@@ -23,94 +55,13 @@ class InputSIFTOutput2(Input):
         title = "SIFT Output 2"
 
 
-class InputVisualization1(Input):
-    name: Literal["InputVisualization1"] = "InputVisualization1"
+class OutputDetectionResult(Output):
+    name: Literal["DetectionResult"] = "DetectionResult"
     value: Optional[Any]
     type: Literal["object"] = "object"
 
     class Config:
-        title = "Visualization 1"
-
-
-class InputVisualization2(Input):
-    name: Literal["InputVisualization2"] = "InputVisualization2"
-    value: Optional[Any]
-    type: Literal["object"] = "object"
-
-    class Config:
-        title = "Visualization 2"
-
-
-class OutputImagesMatch(Output):
-    name: Literal["ImagesMatch"] = "ImagesMatch"
-    value: Optional[bool]
-    type: Literal["bool"] = "bool"
-
-    class Config:
-        title = "Images Match"
-
-
-class OutputGoodMatchesCount(Output):
-    name: Literal["GoodMatchesCount"] = "GoodMatchesCount"
-    value: Optional[int]
-    type: Literal["number"] = "number"
-
-    class Config:
-        title = "Good Matches Count"
-
-
-class OutputKeypoints1(Output):
-    name: Literal["Keypoints1"] = "Keypoints1"
-    value: Optional[Any]
-    type: Literal["object"] = "object"
-
-    class Config:
-        title = "Keypoints 1"
-
-
-class OutputKeypoints2(Output):
-    name: Literal["Keypoints2"] = "Keypoints2"
-    value: Optional[Any]
-    type: Literal["object"] = "object"
-
-    class Config:
-        title = "Keypoints 2"
-
-
-class OutputDescriptors1(Output):
-    name: Literal["Descriptors1"] = "Descriptors1"
-    value: Optional[Any]
-    type: Literal["object"] = "object"
-
-    class Config:
-        title = "Descriptors 1"
-
-
-class OutputDescriptors2(Output):
-    name: Literal["Descriptors2"] = "Descriptors2"
-    value: Optional[Any]
-    type: Literal["object"] = "object"
-
-    class Config:
-        title = "Descriptors 2"
-
-
-class OutputVisualization1(Output):
-    name: Literal["Visualization1"] = "Visualization1"
-    value: Optional[Any]
-    type: Literal["Image"] = "Image"
-
-    class Config:
-        title = "Visualization 1"
-
-
-class OutputVisualization2(Output):
-    name: Literal["Visualization2"] = "Visualization2"
-    value: Optional[Any]
-    type: Literal["Image"] = "Image"
-
-    class Config:
-        title = "Visualization 2"
+        title = "Detection Result"
 
 
 class OutputVisualizationMatches(Output):
@@ -206,21 +157,14 @@ class SIFTComparisonConfigs(Configs):
 
 
 class SIFTComparisonInputs(Inputs):
+    InputImage1: InputImage1
+    InputImage2: InputImage2
     InputSIFTOutput1: InputSIFTOutput1
     InputSIFTOutput2: InputSIFTOutput2
-    InputVisualization1: InputVisualization1
-    InputVisualization2: InputVisualization2
 
 
 class SIFTComparisonOutputs(Outputs):
-    ImagesMatch: OutputImagesMatch
-    GoodMatchesCount: OutputGoodMatchesCount
-    Keypoints1: OutputKeypoints1
-    Keypoints2: OutputKeypoints2
-    Descriptors1: OutputDescriptors1
-    Descriptors2: OutputDescriptors2
-    Visualization1: OutputVisualization1
-    Visualization2: OutputVisualization2
+    DetectionResult: OutputDetectionResult
     VisualizationMatches: OutputVisualizationMatches
 
 
@@ -239,8 +183,9 @@ class SIFTComparisonResponse(Response):
 class SIFTComparison(Config):
     """
     Compares two images using SIFT descriptors from an external SIFT block.
-    Accepts drawn visualizations from Draw Keypoint blocks and passes them through as output.
-    Applies Lowe's ratio test and outputs all 9 results. VisualizationMatches returns None.
+    Outputs a detection result containing ImagesMatch and GoodMatchesCount,
+    and a VisualizationMatches image drawn internally using the original images.
+    Keypoint and descriptor outputs are handled by the external SIFT and Draw Keypoint blocks.
     """
     name: Literal["SIFTComparison"] = "SIFTComparison"
     value: Union[SIFTComparisonRequest, SIFTComparisonResponse]
