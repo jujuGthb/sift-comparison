@@ -134,9 +134,9 @@ class SIFTComparisonConfigs(Configs):
 
 
 class SIFTComparisonInputs(Inputs):
+    InputVisualization1: InputVisualization1
     InputSIFTOutput1: InputSIFTOutput1
     InputSIFTOutput2: InputSIFTOutput2
-    InputVisualization1: InputVisualization1
     InputVisualization2: InputVisualization2
 
 
