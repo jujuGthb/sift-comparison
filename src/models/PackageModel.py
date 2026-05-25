@@ -23,6 +23,24 @@ class InputSIFTOutput2(Input):
         title = "SIFT Output 2"
 
 
+class InputVisualization1(Input):
+    name: Literal["InputVisualization1"] = "InputVisualization1"
+    value: Optional[Any]
+    type: Literal["object"] = "object"
+
+    class Config:
+        title = "Visualization 1"
+
+
+class InputVisualization2(Input):
+    name: Literal["InputVisualization2"] = "InputVisualization2"
+    value: Optional[Any]
+    type: Literal["object"] = "object"
+
+    class Config:
+        title = "Visualization 2"
+
+
 class OutputDetections(Output):
     name: Literal["OutputDetections"] = "OutputDetections"
     value: Optional[Any]
@@ -118,6 +136,8 @@ class SIFTComparisonConfigs(Configs):
 class SIFTComparisonInputs(Inputs):
     InputSIFTOutput1: InputSIFTOutput1
     InputSIFTOutput2: InputSIFTOutput2
+    InputVisualization1: InputVisualization1
+    InputVisualization2: InputVisualization2
 
 
 class SIFTComparisonOutputs(Outputs):
@@ -139,9 +159,10 @@ class SIFTComparisonResponse(Response):
 class SIFTComparison(Config):
     """
     Compares two images using SIFT descriptors from an external SIFT block.
-    Outputs a single OutputDetections containing keypoints, connections, imagesMatch
-    and goodMatchesCount — ready for the DrawMatches block to visualize.
-    classLabel is 'Match' or 'NoMatch'. confidence equals goodMatchesCount.
+    Takes SIFT outputs and Draw Keypoint visualizations as inputs.
+    Outputs a single OutputDetections containing keypoints, connections,
+    goodMatchesCount as confidence, and classLabel Match or NoMatch.
+    No repetition of tasks already done by SIFT and Draw Keypoint blocks.
     """
     name: Literal["SIFTComparison"] = "SIFTComparison"
     value: Union[SIFTComparisonRequest, SIFTComparisonResponse]

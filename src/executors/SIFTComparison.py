@@ -23,6 +23,8 @@ class SIFTComparison(Component):
         self.matcher = self.request.get_param("Matcher")
         self.sift_output_1 = self.request.get_param("InputSIFTOutput1")
         self.sift_output_2 = self.request.get_param("InputSIFTOutput2")
+        self.visualization_input_1 = self.request.get_param("InputVisualization1")
+        self.visualization_input_2 = self.request.get_param("InputVisualization2")
 
     @staticmethod
     def bootstrap(config: dict) -> dict:
