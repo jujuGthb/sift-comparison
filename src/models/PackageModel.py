@@ -5,38 +5,6 @@ from sdks.novavision.src.base.model import (
 )
 
 
-class InputImage1(Input):
-    name: Literal["InputImage1"] = "InputImage1"
-    value: Union[List[Image], Image]
-    type: str = "object"
-
-    @validator("type", pre=True, always=True)
-    def set_type_based_on_value(cls, value, values):
-        value = values.get("value")
-        if isinstance(value, list):
-            return "list"
-        return "object"
-
-    class Config:
-        title = "Image 1"
-
-
-class InputImage2(Input):
-    name: Literal["InputImage2"] = "InputImage2"
-    value: Union[List[Image], Image]
-    type: str = "object"
-
-    @validator("type", pre=True, always=True)
-    def set_type_based_on_value(cls, value, values):
-        value = values.get("value")
-        if isinstance(value, list):
-            return "list"
-        return "object"
-
-    class Config:
-        title = "Image 2"
-
-
 class InputSIFTOutput1(Input):
     name: Literal["InputSIFTOutput1"] = "InputSIFTOutput1"
     value: Optional[Any]
@@ -64,13 +32,13 @@ class OutputDetectionResult(Output):
         title = "Detection Result"
 
 
-class OutputVisualizationMatches(Output):
-    name: Literal["VisualizationMatches"] = "VisualizationMatches"
+class OutputDetections(Output):
+    name: Literal["OutputDetections"] = "OutputDetections"
     value: Optional[Any]
-    type: Literal["Image"] = "Image"
+    type: Literal["list"] = "list"
 
     class Config:
-        title = "Visualization Matches"
+        title = "Output Detections"
 
 
 class GoodMatchesThreshold(Config):
@@ -157,15 +125,13 @@ class SIFTComparisonConfigs(Configs):
 
 
 class SIFTComparisonInputs(Inputs):
-    InputImage1: InputImage1
-    InputImage2: InputImage2
     InputSIFTOutput1: InputSIFTOutput1
     InputSIFTOutput2: InputSIFTOutput2
 
 
 class SIFTComparisonOutputs(Outputs):
     DetectionResult: OutputDetectionResult
-    VisualizationMatches: OutputVisualizationMatches
+    OutputDetections: OutputDetections
 
 
 class SIFTComparisonRequest(Request):
@@ -183,9 +149,9 @@ class SIFTComparisonResponse(Response):
 class SIFTComparison(Config):
     """
     Compares two images using SIFT descriptors from an external SIFT block.
-    Outputs a detection result containing ImagesMatch and GoodMatchesCount,
-    and a VisualizationMatches image drawn internally using the original images.
-    Keypoint and descriptor outputs are handled by the external SIFT and Draw Keypoint blocks.
+    Outputs a DetectionResult with ImagesMatch and GoodMatchesCount,
+    and an OutputDetections with keypoints and connections in PoseEstimation format
+    for the Draw Keypoint block to draw the match visualization.
     """
     name: Literal["SIFTComparison"] = "SIFTComparison"
     value: Union[SIFTComparisonRequest, SIFTComparisonResponse]

@@ -1,14 +1,13 @@
 import os
 import sys
 import json
-import base64
 import cv2
 import numpy as np
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../'))
 
-from sdks.novavision.src.media.image import Image
 from sdks.novavision.src.base.component import Component
+from sdks.novavision.src.base.model import KeyPoints, Detection, Connection
 from sdks.novavision.src.helper.executor import Executor
 from components.SIFTComparison.src.utils.response import build_response_sift_comparison
 from components.SIFTComparison.src.models.PackageModel import PackageModel
@@ -22,8 +21,6 @@ class SIFTComparison(Component):
         self.good_matches_threshold = self.request.get_param("GoodMatchesThreshold")
         self.ratio_threshold = self.request.get_param("RatioThreshold")
         self.matcher = self.request.get_param("Matcher")
-        self.image_selector_1 = self.request.get_param("InputImage1")
-        self.image_selector_2 = self.request.get_param("InputImage2")
         self.sift_output_1 = self.request.get_param("InputSIFTOutput1")
         self.sift_output_2 = self.request.get_param("InputSIFTOutput2")
 
@@ -50,21 +47,6 @@ class SIFTComparison(Component):
                 descriptors.append(kp["descriptor"])
         return keypoints_dicts, np.array(descriptors, dtype=np.float32)
 
-    def _keypoints_to_cv2(self, keypoints_dicts):
-        keypoints = []
-        for kp in keypoints_dicts:
-            pt = kp.get("pt", (0, 0))
-            keypoints.append(cv2.KeyPoint(
-                x=float(pt[0]),
-                y=float(pt[1]),
-                size=float(kp.get("size", 1)),
-                angle=float(kp.get("angle", -1)),
-                response=float(kp.get("response", 0)),
-                octave=int(kp.get("octave", 0)),
-                class_id=-1,
-            ))
-        return keypoints
-
     def run(self):
         try:
             keypoints1_dicts, descriptors1 = self._extract_keypoints_and_descriptors(self.sift_output_1)
@@ -78,7 +60,7 @@ class SIFTComparison(Component):
             if len(descriptors1) < 2 or len(descriptors2) < 2:
                 print(f"[SIFT] Early return — not enough descriptors")
                 self.detection_result = {"imagesMatch": False, "goodMatchesCount": 0}
-                self.visualization_matches = None
+                self.output_detections = []
                 return build_response_sift_comparison(context=self)
 
             if self.matcher == "BFMatcher":
@@ -111,42 +93,31 @@ class SIFTComparison(Component):
             print(f"[SIFT] good_matches_count: {good_matches_count}")
             print(f"[SIFT] images_match: {images_match}")
 
-            self.visualization_matches = None
+            keypoints = [
+                KeyPoints(cx=float(kp["pt"][0]), cy=float(kp["pt"][1]), confidence=1.0)
+                for kp in keypoints1_dicts
+            ]
 
-            img1 = Image.get_frame(img=self.image_selector_1, redis_db=self.redis_db)
-            img2 = Image.get_frame(img=self.image_selector_2, redis_db=self.redis_db)
+            connections = [
+                Connection(p1=m[0].queryIdx, p2=m[0].trainIdx)
+                for m in good_matches
+            ]
 
-            _, buf1 = cv2.imencode('.jpg', img1.value)
-            image1 = cv2.imdecode(buf1, cv2.IMREAD_COLOR)
-
-            _, buf2 = cv2.imencode('.jpg', img2.value)
-            image2 = cv2.imdecode(buf2, cv2.IMREAD_COLOR)
-
-            kp1 = self._keypoints_to_cv2(keypoints1_dicts)
-            kp2 = self._keypoints_to_cv2(keypoints2_dicts)
-
-            if self.matcher == "BFMatcher":
-                draw_params = dict(flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
-            else:
-                draw_params = dict(
-                    matchColor=(0, 255, 0),
-                    singlePointColor=(0, 0, 255),
-                    flags=cv2.DrawMatchesFlags_DEFAULT,
+            self.output_detections = [
+                Detection(
+                    boundingBox=None,
+                    keyPoints=keypoints,
+                    connections=connections,
+                    confidence=1.0,
+                    classId=0,
+                    classLabel="SIFTMatch",
+                    imgUID=self.uID
                 )
-
-            viz_matches = cv2.drawMatchesKnn(
-                image1, kp1,
-                image2, kp2,
-                good_matches,
-                None,
-                **draw_params,
-            )
-            _, buf_m = cv2.imencode('.jpg', viz_matches)
-            self.visualization_matches = base64.b64encode(buf_m).decode('utf-8')
+            ]
 
         except Exception as e:
             self.detection_result = {"imagesMatch": False, "goodMatchesCount": 0}
-            self.visualization_matches = None
+            self.output_detections = []
             print(f"[SIFTComparison] Error: {str(e)}")
 
         return build_response_sift_comparison(context=self)

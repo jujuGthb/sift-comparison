@@ -7,17 +7,17 @@ from components.SIFTComparison.src.models.PackageModel import (
     SIFTComparisonResponse,
     SIFTComparisonOutputs,
     OutputDetectionResult,
-    OutputVisualizationMatches,
+    OutputDetections,
 )
 
 
 def build_response_sift_comparison(context):
     detection_result = OutputDetectionResult(value=context.detection_result)
-    visualization_matches = OutputVisualizationMatches(value=context.visualization_matches)
+    output_detections = OutputDetections(value=context.output_detections)
 
     outputs = SIFTComparisonOutputs(
         DetectionResult=detection_result,
-        VisualizationMatches=visualization_matches,
+        OutputDetections=output_detections,
     )
 
     response = SIFTComparisonResponse(outputs=outputs)
