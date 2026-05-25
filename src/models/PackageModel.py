@@ -23,15 +23,6 @@ class InputSIFTOutput2(Input):
         title = "SIFT Output 2"
 
 
-class OutputDetectionResult(Output):
-    name: Literal["DetectionResult"] = "DetectionResult"
-    value: Optional[Any]
-    type: Literal["object"] = "object"
-
-    class Config:
-        title = "Detection Result"
-
-
 class OutputDetections(Output):
     name: Literal["OutputDetections"] = "OutputDetections"
     value: Optional[Any]
@@ -130,7 +121,6 @@ class SIFTComparisonInputs(Inputs):
 
 
 class SIFTComparisonOutputs(Outputs):
-    DetectionResult: OutputDetectionResult
     OutputDetections: OutputDetections
 
 
@@ -149,9 +139,9 @@ class SIFTComparisonResponse(Response):
 class SIFTComparison(Config):
     """
     Compares two images using SIFT descriptors from an external SIFT block.
-    Outputs a DetectionResult with ImagesMatch and GoodMatchesCount,
-    and an OutputDetections with keypoints and connections in PoseEstimation format
-    for the Draw Keypoint block to draw the match visualization.
+    Outputs a single OutputDetections containing keypoints, connections, imagesMatch
+    and goodMatchesCount — ready for the DrawMatches block to visualize.
+    classLabel is 'Match' or 'NoMatch'. confidence equals goodMatchesCount.
     """
     name: Literal["SIFTComparison"] = "SIFTComparison"
     value: Union[SIFTComparisonRequest, SIFTComparisonResponse]

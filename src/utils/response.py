@@ -6,17 +6,14 @@ from components.SIFTComparison.src.models.PackageModel import (
     SIFTComparison,
     SIFTComparisonResponse,
     SIFTComparisonOutputs,
-    OutputDetectionResult,
     OutputDetections,
 )
 
 
 def build_response_sift_comparison(context):
-    detection_result = OutputDetectionResult(value=context.detection_result)
     output_detections = OutputDetections(value=context.output_detections)
 
     outputs = SIFTComparisonOutputs(
-        DetectionResult=detection_result,
         OutputDetections=output_detections,
     )
 

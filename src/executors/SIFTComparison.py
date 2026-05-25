@@ -59,8 +59,17 @@ class SIFTComparison(Component):
 
             if len(descriptors1) < 2 or len(descriptors2) < 2:
                 print(f"[SIFT] Early return — not enough descriptors")
-                self.detection_result = {"imagesMatch": False, "goodMatchesCount": 0}
-                self.output_detections = []
+                self.output_detections = [
+                    Detection(
+                        boundingBox=None,
+                        keyPoints=[],
+                        connections=[],
+                        confidence=0.0,
+                        classId=0,
+                        classLabel="NoMatch",
+                        imgUID=self.uID
+                    )
+                ]
                 return build_response_sift_comparison(context=self)
 
             if self.matcher == "BFMatcher":
@@ -85,21 +94,19 @@ class SIFTComparison(Component):
             good_matches_count = len(good_matches)
             images_match = good_matches_count >= self.good_matches_threshold
 
-            self.detection_result = {
-                "imagesMatch": images_match,
-                "goodMatchesCount": good_matches_count
-            }
-
             print(f"[SIFT] good_matches_count: {good_matches_count}")
             print(f"[SIFT] images_match: {images_match}")
 
+            all_keypoints_dicts = keypoints1_dicts + keypoints2_dicts
+            offset = len(keypoints1_dicts)
+
             keypoints = [
                 KeyPoints(cx=float(kp["pt"][0]), cy=float(kp["pt"][1]), confidence=1.0)
-                for kp in keypoints1_dicts
+                for kp in all_keypoints_dicts
             ]
 
             connections = [
-                Connection(p1=m[0].queryIdx, p2=m[0].trainIdx)
+                Connection(p1=m[0].queryIdx, p2=m[0].trainIdx + offset)
                 for m in good_matches
             ]
 
@@ -108,16 +115,25 @@ class SIFTComparison(Component):
                     boundingBox=None,
                     keyPoints=keypoints,
                     connections=connections,
-                    confidence=1.0,
-                    classId=0,
-                    classLabel="SIFTMatch",
+                    confidence=float(good_matches_count),
+                    classId=1 if images_match else 0,
+                    classLabel="Match" if images_match else "NoMatch",
                     imgUID=self.uID
                 )
             ]
 
         except Exception as e:
-            self.detection_result = {"imagesMatch": False, "goodMatchesCount": 0}
-            self.output_detections = []
+            self.output_detections = [
+                Detection(
+                    boundingBox=None,
+                    keyPoints=[],
+                    connections=[],
+                    confidence=0.0,
+                    classId=0,
+                    classLabel="NoMatch",
+                    imgUID=self.uID
+                )
+            ]
             print(f"[SIFTComparison] Error: {str(e)}")
 
         return build_response_sift_comparison(context=self)
